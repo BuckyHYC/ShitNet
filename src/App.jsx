@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
 import {
   ArrowUpRight,
@@ -6,6 +6,7 @@ import {
   Cpu,
   ExternalLink,
   Hammer,
+  MousePointerClick,
   Rocket,
   ThumbsDown,
   ThumbsUp,
@@ -13,8 +14,19 @@ import {
 
 const GITHUB_URL = 'https://github.com/BuckyHYC'
 const MORON_TOWN_URL = 'https://moron-town.vercel.app'
+const CLIENT_ID_KEY = 'shitnet_client_id'
+const CLICKS_KEY = 'shitnet_clicks_v1'
 const STORAGE_KEY = 'shitnet_feedback_v1'
 const COMMAND = 'open moron-town.vercel.app'
+const EMPTY_STATS = {
+  likes: 0,
+  dislikes: 0,
+  projectClicks: {
+    morontown: 0,
+    next_bad_idea: 0,
+    mystery_slot: 0,
+  },
+}
 
 const bootLines = [
   { time: '12:00:01', level: 'ok', text: 'ShitNet OS v1.0 booting...' },
@@ -26,6 +38,7 @@ const bootLines = [
 
 const projects = [
   {
+    slug: 'morontown',
     name: 'MoronTown',
     tag: 'LIVE',
     accent: 'live',
@@ -35,6 +48,7 @@ const projects = [
     href: MORON_TOWN_URL,
   },
   {
+    slug: 'next_bad_idea',
     name: 'Next Bad Idea',
     tag: 'SOON',
     accent: 'warn',
@@ -44,6 +58,7 @@ const projects = [
     href: null,
   },
   {
+    slug: 'mystery_slot',
     name: 'Mystery Slot',
     tag: 'SOON',
     accent: 'muted',
@@ -167,71 +182,112 @@ function readFeedback() {
   }
 }
 
-function Feedback() {
-  const [state, setState] = useState(readFeedback)
-
-  const applyVote = (choice) => {
-    const next = { ...state }
-    const target = choice === 'like' ? 'likes' : 'dislikes'
-
-    if (next.vote === choice) {
-      next[target] = Math.max(0, next[target] - 1)
-      next.vote = null
-    } else {
-      if (next.vote === 'like') {
-        next.likes = Math.max(0, next.likes - 1)
-      }
-      if (next.vote === 'dislike') {
-        next.dislikes = Math.max(0, next.dislikes - 1)
-      }
-      next.vote = choice
-      next[target] += 1
+function readClientId() {
+  try {
+    let id = window.localStorage.getItem(CLIENT_ID_KEY)
+    if (!id) {
+      id =
+        window.crypto?.randomUUID?.() ||
+        `client-${Date.now()}-${Math.random().toString(36).slice(2)}`
+      window.localStorage.setItem(CLIENT_ID_KEY, id)
     }
+    return id
+  } catch {
+    return null
+  }
+}
 
-    setState(next)
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
-    } catch {
-      // 浏览器禁用存储时，仅保留当前页面内的状态
+function readLocalClicks() {
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(CLICKS_KEY) || '{}')
+    const clicks = { ...EMPTY_STATS.projectClicks }
+    for (const project of Object.keys(clicks)) {
+      if (Number.isFinite(parsed[project])) {
+        clicks[project] = Math.max(0, Math.floor(parsed[project]))
+      }
+    }
+    return clicks
+  } catch {
+    return { ...EMPTY_STATS.projectClicks }
+  }
+}
+
+function saveLocalClicks(clicks) {
+  try {
+    window.localStorage.setItem(CLICKS_KEY, JSON.stringify(clicks))
+  } catch {
+    // 忽略存储失败
+  }
+}
+
+function normalizeStats(raw) {
+  const stats = {
+    ...EMPTY_STATS,
+    projectClicks: { ...EMPTY_STATS.projectClicks },
+  }
+  if (!raw || typeof raw !== 'object') {
+    return stats
+  }
+  stats.likes = Number.isFinite(Number(raw.likes))
+    ? Math.max(0, Math.floor(Number(raw.likes)))
+    : 0
+  stats.dislikes = Number.isFinite(Number(raw.dislikes))
+    ? Math.max(0, Math.floor(Number(raw.dislikes)))
+    : 0
+  for (const project of Object.keys(stats.projectClicks)) {
+    if (Number.isFinite(Number(raw[project]))) {
+      stats.projectClicks[project] = Math.max(
+        0,
+        Math.floor(Number(raw[project])),
+      )
     }
   }
+  return stats
+}
 
+function Feedback({ likes, dislikes, vote, onVote, busy, online }) {
   return (
     <div className="feedback-panel">
       <div className="feedback-copy">
-        <span className="feedback-label">USER INPUT // LOCAL</span>
+        <span className="feedback-label">
+          USER INPUT // {online ? 'GLOBAL' : 'LOCAL'}
+        </span>
         <p className="feedback-line">这个网站，还行吗？</p>
         <p className="feedback-note">
-          数据只存在你的浏览器里，不联网，不跨设备。
+          {online
+            ? '数字来自云端，所有访客共享；每个浏览器限一票。'
+            : '本地降级模式：数字只存在你的浏览器里。'}
         </p>
       </div>
       <div className="feedback-actions">
         <button
           className="vote-button vote-button--like"
           type="button"
-          aria-pressed={state.vote === 'like'}
-          onClick={() => applyVote('like')}
+          aria-pressed={vote === 'like'}
+          disabled={busy}
+          onClick={() => onVote('like')}
         >
           <ThumbsUp size={18} />
           <span>满意</span>
-          <span className="vote-count">{state.likes}</span>
+          <span className="vote-count">{likes}</span>
         </button>
         <button
           className="vote-button vote-button--dislike"
           type="button"
-          aria-pressed={state.vote === 'dislike'}
-          onClick={() => applyVote('dislike')}
+          aria-pressed={vote === 'dislike'}
+          disabled={busy}
+          onClick={() => onVote('dislike')}
         >
           <ThumbsDown size={18} />
           <span>不满意</span>
-          <span className="vote-count">{state.dislikes}</span>
+          <span className="vote-count">{dislikes}</span>
         </button>
       </div>
     </div>
   )
 }
 
-function ProjectCard({ project, index }) {
+function ProjectCard({ project, clicks, index, onOpen }) {
   const reduced = useReducedMotion()
   const Icon = project.icon
   const content = (
@@ -245,6 +301,10 @@ function ProjectCard({ project, index }) {
       <h3 className="card-title">{project.name}</h3>
       <p className="card-description">{project.description}</p>
       <p className="card-meta">{project.meta}</p>
+      <p className="card-clicks">
+        <MousePointerClick size={14} strokeWidth={1.8} />
+        <span>点击量 {clicks}</span>
+      </p>
       <div className="card-action">
         {project.href ? (
           <>
@@ -280,6 +340,7 @@ function ProjectCard({ project, index }) {
         href={project.href}
         target="_blank"
         rel="noreferrer"
+        onClick={() => onOpen(project)}
         {...motionProps}
       >
         {content}
@@ -299,6 +360,155 @@ function ProjectCard({ project, index }) {
 }
 
 function App() {
+  const [clientId] = useState(readClientId)
+  const [feedback] = useState(readFeedback)
+  const [vote, setVote] = useState(feedback.vote)
+  const [stats, setStats] = useState(() => ({
+    likes: feedback.likes,
+    dislikes: feedback.dislikes,
+    projectClicks: readLocalClicks(),
+  }))
+  const [busy, setBusy] = useState(false)
+  const [online, setOnline] = useState(false)
+  const lastClickAt = useRef({})
+
+  useEffect(() => {
+    let cancelled = false
+    fetch('/api/stats')
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error('stats request failed')
+        }
+        return response.json()
+      })
+      .then((data) => {
+        if (cancelled) return
+        setStats(normalizeStats(data))
+        setOnline(true)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const handleVote = (choice) => {
+    if (busy || !clientId) return
+
+    const previousVote = vote
+    const nextVote = previousVote === choice ? null : choice
+    const previousStats = stats
+    const nextStats = {
+      ...stats,
+      likes: stats.likes,
+      dislikes: stats.dislikes,
+    }
+    if (previousVote) {
+      nextStats[previousVote] = Math.max(0, nextStats[previousVote] - 1)
+    }
+    if (nextVote) {
+      nextStats[nextVote] += 1
+    }
+
+    setVote(nextVote)
+    setStats(nextStats)
+    try {
+      window.localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          vote: nextVote,
+          likes: nextStats.likes,
+          dislikes: nextStats.dislikes,
+        }),
+      )
+    } catch {
+      // 浏览器禁用存储时，仅保留当前页面内的状态
+    }
+
+    setBusy(true)
+    fetch('/api/vote', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ clientId, choice: nextVote }),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error('vote request failed')
+        }
+        return response.json()
+      })
+      .then((data) => {
+        setStats(normalizeStats(data))
+        setOnline(true)
+      })
+      .catch(() => {
+        setVote(previousVote)
+        setStats(previousStats)
+        setOnline(false)
+        try {
+          window.localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify({
+              vote: previousVote,
+              likes: previousStats.likes,
+              dislikes: previousStats.dislikes,
+            }),
+          )
+        } catch {
+          // 忽略存储失败
+        }
+      })
+      .finally(() => setBusy(false))
+  }
+
+  const handleProjectOpen = (project) => {
+    const now = Date.now()
+    if (now - (lastClickAt.current[project.slug] || 0) < 500) {
+      return
+    }
+    lastClickAt.current[project.slug] = now
+
+    const nextClicks = {
+      ...stats.projectClicks,
+      [project.slug]: (stats.projectClicks[project.slug] || 0) + 1,
+    }
+    setStats((current) => ({
+      ...current,
+      projectClicks: nextClicks,
+    }))
+    saveLocalClicks(nextClicks)
+
+    if (!project.href) {
+      return
+    }
+
+    if (navigator.sendBeacon) {
+      const payload = new Blob(
+        [JSON.stringify({ project: project.slug })],
+        { type: 'application/json' },
+      )
+      navigator.sendBeacon('/api/click', payload)
+    } else {
+      fetch('/api/click', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ project: project.slug }),
+        keepalive: true,
+      }).catch(() => {})
+    }
+    window.setTimeout(() => {
+      fetch('/api/stats')
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error('stats request failed')
+          }
+          return response.json()
+        })
+        .then((data) => setStats(normalizeStats(data)))
+        .catch(() => {})
+    }, 900)
+  }
+
   return (
     <div className="app">
       <div className="bg-grid" aria-hidden="true" />
@@ -380,7 +590,9 @@ function App() {
                 <ProjectCard
                   key={project.name}
                   project={project}
+                  clicks={stats.projectClicks[project.slug] || 0}
                   index={index}
+                  onOpen={handleProjectOpen}
                 />
               ))}
             </div>
@@ -393,7 +605,14 @@ function App() {
               <p className="section-index">02 // FEEDBACK</p>
               <h2 className="section-title">投个票再走</h2>
             </div>
-            <Feedback />
+            <Feedback
+              likes={stats.likes}
+              dislikes={stats.dislikes}
+              vote={vote}
+              onVote={handleVote}
+              busy={busy}
+              online={online}
+            />
           </div>
         </section>
       </main>

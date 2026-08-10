@@ -9,6 +9,14 @@ npm install
 npm run dev
 ```
 
+普通 `npm run dev` 不包含 `api/` 路由，页面会以本地模式运行；联调后端请使用：
+
+```bash
+npx vercel dev
+```
+
+需要先在 Vercel 控制台给项目绑定 KV（或 Upstash Redis 集成），本地可通过 `.env.local` 提供 `KV_REST_API_URL` 与 `KV_REST_API_TOKEN`。
+
 ## 构建与预览
 
 ```bash
@@ -16,18 +24,25 @@ npm run build
 npm run preview
 ```
 
-## 反馈存储
+## 反馈与点击量存储
 
-点赞/不满意使用 `localStorage` 键 `shitnet_feedback_v1` 保存，数据只存在当前浏览器，不会上传到任何后端。
+满意/不满意与项目卡片点击量使用 Vercel KV 全局持久化：
+
+- `GET /api/stats`：读取全局统计。
+- `POST /api/vote`：投票、切换或取消（每个浏览器一票）。
+- `POST /api/click`：项目卡片点击量 +1。
+
+前端在 API 不可用时自动降级为 `localStorage`（键 `shitnet_feedback_v1`、`shitnet_clicks_v1`）。
 
 ## 部署
 
-- Vercel：导入仓库后默认即可构建（`npm run build`，输出目录 `dist`）。
-- Netlify：构建命令 `npm run build`，发布目录 `dist`。
-- GitHub Pages：需把 `vite.config.js` 中的 `base` 改为 `'/ShitNet/'`，再部署 `dist`。
+- Vercel：导入仓库后默认即可构建（`npm run build`，输出目录 `dist`），`api/` 目录会自动发布为 serverless functions；记得在项目设置中添加 KV 集成并注入 `KV_REST_API_URL` / `KV_REST_API_TOKEN`。
+- Netlify：构建命令 `npm run build`，发布目录 `dist`；无 `api/` 时反馈与点击量降级为本地存储。
+- GitHub Pages：需把 `vite.config.js` 中的 `base` 改为 `'/ShitNet/'`，再部署 `dist`；反馈与点击量降级为本地存储。
 
 ## 结构
 
+- `api/`：Vercel serverless functions（统计、投票、点击）。
 - `src/App.jsx`：页面结构与交互。
 - `src/index.css`：终端风格样式。
 - `index.html`：入口与字体加载。
