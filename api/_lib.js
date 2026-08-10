@@ -34,8 +34,9 @@ export function normalizeStats(raw) {
   if (!raw || typeof raw !== 'object') {
     return stats
   }
-  stats.likes = toCount(raw.likes)
-  stats.dislikes = toCount(raw.dislikes)
+  // 兼容早期版本写入的单数字段 like/dislike
+  stats.likes = toCount(raw.likes) + toCount(raw.like)
+  stats.dislikes = toCount(raw.dislikes) + toCount(raw.dislike)
   for (const project of PROJECTS) {
     stats.projectClicks[project] = toCount(raw[project])
   }

@@ -28,7 +28,8 @@ export default async function handler(req, res) {
   }
 
   try {
-    await getRedis().hincrby(STATS_KEY, choice, 1)
+    const field = choice === 'dislike' ? 'dislikes' : 'likes'
+    await getRedis().hincrby(STATS_KEY, field, 1)
     res.status(200).json(await readStats())
   } catch {
     res.status(503).json({ error: 'vote unavailable' })

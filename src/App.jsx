@@ -215,11 +215,9 @@ function normalizeStats(raw) {
     ? Math.max(0, Math.floor(Number(raw.dislikes)))
     : 0
   for (const project of Object.keys(stats.projectClicks)) {
-    if (Number.isFinite(Number(raw[project]))) {
-      stats.projectClicks[project] = Math.max(
-        0,
-        Math.floor(Number(raw[project])),
-      )
+    const value = raw.projectClicks?.[project] ?? raw[project]
+    if (Number.isFinite(Number(value))) {
+      stats.projectClicks[project] = Math.max(0, Math.floor(Number(value)))
     }
   }
   return stats
@@ -382,13 +380,10 @@ function App() {
   }, [])
 
   const handleVote = (choice) => {
+    const field = choice === 'dislike' ? 'dislikes' : 'likes'
     setStats((current) => {
-      const next = {
-        ...current,
-        likes: current.likes,
-        dislikes: current.dislikes,
-      }
-      next[choice] += 1
+      const next = { ...current }
+      next[field] += 1
       try {
         window.localStorage.setItem(
           STORAGE_KEY,
