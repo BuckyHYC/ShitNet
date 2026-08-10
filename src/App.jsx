@@ -207,9 +207,6 @@ function Feedback({ likes, dislikes, disliked, onVote }) {
       <div className="feedback-copy">
         <span className="feedback-label">USER INPUT // GLOBAL</span>
         <p className="feedback-line">这个网站，还行吗？</p>
-        <p className="feedback-note">
-          数字来自云端，所有访客共享；满意点一次加一，不满意每个浏览器只能记一次，再点取消。
-        </p>
       </div>
       <div className="feedback-actions">
         <button
