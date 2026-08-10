@@ -1,8 +1,17 @@
-import { kv } from '@vercel/kv'
+import { Redis } from '@upstash/redis'
 
 export const STATS_KEY = 'shitnet:stats'
 export const VOTERS_KEY = 'shitnet:voters'
 export const PROJECTS = ['morontown', 'next_bad_idea', 'mystery_slot']
+
+let redis
+
+function getRedis() {
+  if (!redis) {
+    redis = Redis.fromEnv()
+  }
+  return redis
+}
 
 export function emptyStats() {
   return {
@@ -35,6 +44,6 @@ export function normalizeStats(raw) {
 }
 
 export async function readStats() {
-  const raw = await kv.hgetall(STATS_KEY)
+  const raw = await getRedis().hgetall(STATS_KEY)
   return normalizeStats(raw)
 }

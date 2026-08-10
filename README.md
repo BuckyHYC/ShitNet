@@ -15,7 +15,7 @@ npm run dev
 npx vercel dev
 ```
 
-需要先在 Vercel 控制台给项目绑定 KV（或 Upstash Redis 集成），本地可通过 `.env.local` 提供 `KV_REST_API_URL` 与 `KV_REST_API_TOKEN`。
+需要先在 Vercel 控制台给项目绑定 Upstash Redis 集成（自动注入 `UPSTASH_REDIS_REST_URL` 与 `UPSTASH_REDIS_REST_TOKEN`，也兼容旧的 `KV_REST_API_URL` / `KV_REST_API_TOKEN`）；本地可通过 `.env.local` 提供同样的变量。
 
 ## 构建与预览
 
@@ -26,7 +26,7 @@ npm run preview
 
 ## 反馈与点击量存储
 
-满意/不满意与项目卡片点击量使用 Vercel KV 全局持久化：
+满意/不满意与项目卡片点击量使用 Upstash Redis 全局持久化：
 
 - `GET /api/stats`：读取全局统计。
 - `POST /api/vote`：投票、切换或取消（每个浏览器一票）。
@@ -36,7 +36,7 @@ npm run preview
 
 ## 部署
 
-- Vercel：导入仓库后默认即可构建（`npm run build`，输出目录 `dist`），`api/` 目录会自动发布为 serverless functions；记得在项目设置中添加 KV 集成并注入 `KV_REST_API_URL` / `KV_REST_API_TOKEN`。
+- Vercel：导入仓库后默认即可构建（`npm run build`，输出目录 `dist`），`api/` 目录会自动发布为 serverless functions；在项目设置中连接 Upstash Redis 集成即可自动注入连接变量（也可手动配置 `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`）。
 - Netlify：构建命令 `npm run build`，发布目录 `dist`；无 `api/` 时反馈与点击量降级为本地存储。
 - GitHub Pages：需把 `vite.config.js` 中的 `base` 改为 `'/ShitNet/'`，再部署 `dist`；反馈与点击量降级为本地存储。
 

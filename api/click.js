@@ -1,5 +1,4 @@
-import { kv } from '@vercel/kv'
-import { PROJECTS, readStats, STATS_KEY } from './_lib.js'
+import { getRedis, PROJECTS, readStats, STATS_KEY } from './_lib.js'
 
 function parseBody(req) {
   if (req.body && typeof req.body === 'object') {
@@ -29,7 +28,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    await kv.hincrby(STATS_KEY, project, 1)
+    await getRedis().hincrby(STATS_KEY, project, 1)
     res.status(200).json(await readStats())
   } catch {
     res.status(503).json({ error: 'click unavailable' })

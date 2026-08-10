@@ -1,5 +1,4 @@
-import { kv } from '@vercel/kv'
-import { readStats, STATS_KEY, VOTERS_KEY } from './_lib.js'
+import { getRedis, readStats, STATS_KEY, VOTERS_KEY } from './_lib.js'
 
 const VOTE_SCRIPT = `
 local current = redis.call('hget', KEYS[1], ARGV[1])
@@ -70,7 +69,11 @@ export default async function handler(req, res) {
   }
 
   try {
-    await kv.eval(VOTE_SCRIPT, [VOTERS_KEY, STATS_KEY], [clientId, requested])
+    await getRedis().eval(
+      VOTE_SCRIPT,
+      [VOTERS_KEY, STATS_KEY],
+      [clientId, requested],
+    )
     res.status(200).json(await readStats())
   } catch {
     res.status(503).json({ error: 'vote unavailable' })
