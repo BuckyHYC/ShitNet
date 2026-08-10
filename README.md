@@ -9,7 +9,7 @@ npm install
 npm run dev
 ```
 
-普通 `npm run dev` 不包含 `api/` 路由，页面会以本地模式运行；联调后端请使用：
+普通 `npm run dev` 不包含 `api/` 路由，页面会以 0 计数启动；联调后端请使用：
 
 ```bash
 npx vercel dev
@@ -32,13 +32,13 @@ npm run preview
 - `POST /api/vote`：满意/不满意每次点击 +1，不限制次数。
 - `POST /api/click`：项目卡片点击量 +1。
 
-前端在 API 不可用时自动降级为 `localStorage`（键 `shitnet_feedback_v1`、`shitnet_clicks_v1`）。
+统计只走云端全局计数，不提供本地降级模式；API 不可用时计数保持为 0。
 
 ## 部署
 
 - Vercel：导入仓库后默认即可构建（`npm run build`，输出目录 `dist`），`api/` 目录会自动发布为 serverless functions；在项目设置中连接 Upstash Redis 集成即可自动注入连接变量（也可手动配置 `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`）。
-- Netlify：构建命令 `npm run build`，发布目录 `dist`；无 `api/` 时反馈与点击量降级为本地存储。
-- GitHub Pages：需把 `vite.config.js` 中的 `base` 改为 `'/ShitNet/'`，再部署 `dist`；反馈与点击量降级为本地存储。
+- Netlify：构建命令 `npm run build`，发布目录 `dist`；无 `api/` 时反馈与点击量不可用。
+- GitHub Pages：需把 `vite.config.js` 中的 `base` 改为 `'/ShitNet/'`，再部署 `dist`；反馈与点击量不可用。
 
 ## 结构
 

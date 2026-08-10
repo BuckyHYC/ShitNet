@@ -1,4 +1,4 @@
-import { getRedis, PROJECTS, readStats, STATS_KEY } from './_lib.js'
+import { getRedis, PROJECTS, readStats, sendOptions, STATS_KEY } from './_lib.js'
 
 function parseBody(req) {
   if (req.body && typeof req.body === 'object') {
@@ -8,6 +8,11 @@ function parseBody(req) {
 }
 
 export default async function handler(req, res) {
+  if (req.method === 'OPTIONS') {
+    sendOptions(res)
+    return
+  }
+
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'method not allowed' })
     return

@@ -212,6 +212,8 @@ button:focus-visible {
   align-items: center;
   justify-content: center;
   gap: 10px;
+  -webkit-user-select: none;
+  user-select: none;
   min-height: 52px;
   padding: 0 22px;
   border-radius: 8px;
@@ -610,6 +612,8 @@ button:focus-visible {
   display: flex;
   align-items: center;
   gap: 10px;
+  -webkit-user-select: none;
+  user-select: none;
   min-height: 58px;
   padding: 0 16px;
   border: 1px solid var(--line);

@@ -14,8 +14,6 @@ import {
 
 const GITHUB_URL = 'https://github.com/BuckyHYC'
 const MORON_TOWN_URL = 'https://moron-town.vercel.app'
-const CLICKS_KEY = 'shitnet_clicks_v1'
-const STORAGE_KEY = 'shitnet_feedback_v1'
 const COMMAND = 'open moron-town.vercel.app'
 const EMPTY_STATS = {
   likes: 0,
@@ -158,48 +156,6 @@ function BootLog() {
   )
 }
 
-function readFeedback() {
-  const empty = { likes: 0, dislikes: 0 }
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY)
-    if (!raw) {
-      return empty
-    }
-    const parsed = JSON.parse(raw)
-    return {
-      likes: Number.isFinite(parsed.likes) ? Math.max(0, parsed.likes) : 0,
-      dislikes: Number.isFinite(parsed.dislikes)
-        ? Math.max(0, parsed.dislikes)
-        : 0,
-    }
-  } catch {
-    return empty
-  }
-}
-
-function readLocalClicks() {
-  try {
-    const parsed = JSON.parse(window.localStorage.getItem(CLICKS_KEY) || '{}')
-    const clicks = { ...EMPTY_STATS.projectClicks }
-    for (const project of Object.keys(clicks)) {
-      if (Number.isFinite(parsed[project])) {
-        clicks[project] = Math.max(0, Math.floor(parsed[project]))
-      }
-    }
-    return clicks
-  } catch {
-    return { ...EMPTY_STATS.projectClicks }
-  }
-}
-
-function saveLocalClicks(clicks) {
-  try {
-    window.localStorage.setItem(CLICKS_KEY, JSON.stringify(clicks))
-  } catch {
-    // 忽略存储失败
-  }
-}
-
 function normalizeStats(raw) {
   const stats = {
     ...EMPTY_STATS,
@@ -223,18 +179,14 @@ function normalizeStats(raw) {
   return stats
 }
 
-function Feedback({ likes, dislikes, onVote, online }) {
+function Feedback({ likes, dislikes, onVote }) {
   return (
     <div className="feedback-panel">
       <div className="feedback-copy">
-        <span className="feedback-label">
-          USER INPUT // {online ? 'GLOBAL' : 'LOCAL'}
-        </span>
+        <span className="feedback-label">USER INPUT // GLOBAL</span>
         <p className="feedback-line">这个网站，还行吗？</p>
         <p className="feedback-note">
-          {online
-            ? '数字来自云端，所有访客共享；点一次加一，不限制次数。'
-            : '本地降级模式：数字只存在你的浏览器里。'}
+          数字来自云端，所有访客共享；点一次加一，不限制次数。
         </p>
       </div>
       <div className="feedback-actions">
@@ -334,13 +286,10 @@ function ProjectCard({ project, clicks, index, onOpen }) {
 }
 
 function App() {
-  const [feedback] = useState(readFeedback)
   const [stats, setStats] = useState(() => ({
-    likes: feedback.likes,
-    dislikes: feedback.dislikes,
-    projectClicks: readLocalClicks(),
+    ...EMPTY_STATS,
+    projectClicks: { ...EMPTY_STATS.projectClicks },
   }))
-  const [online, setOnline] = useState(false)
   const lastClickAt = useRef({})
   const voteTimer = useRef(null)
 
@@ -354,7 +303,6 @@ function App() {
       })
       .then((data) => {
         setStats(normalizeStats(data))
-        setOnline(true)
       })
       .catch(() => {})
   }
@@ -371,7 +319,6 @@ function App() {
       .then((data) => {
         if (cancelled) return
         setStats(normalizeStats(data))
-        setOnline(true)
       })
       .catch(() => {})
     return () => {
@@ -384,29 +331,20 @@ function App() {
     setStats((current) => {
       const next = { ...current }
       next[field] += 1
-      try {
-        window.localStorage.setItem(
-          STORAGE_KEY,
-          JSON.stringify({ likes: next.likes, dislikes: next.dislikes }),
-        )
-      } catch {
-        // 浏览器禁用存储时，仅保留当前页面内的状态
-      }
       return next
     })
 
     fetch('/api/vote', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
       body: JSON.stringify({ choice }),
     })
       .then((response) => {
         if (!response.ok) {
           throw new Error('vote request failed')
         }
-        setOnline(true)
       })
-      .catch(() => setOnline(false))
+      .catch(() => {})
 
     window.clearTimeout(voteTimer.current)
     voteTimer.current = window.setTimeout(refreshStats, 900)
@@ -427,7 +365,6 @@ function App() {
       ...current,
       projectClicks: nextClicks,
     }))
-    saveLocalClicks(nextClicks)
 
     if (!project.href) {
       return
@@ -436,13 +373,13 @@ function App() {
     if (navigator.sendBeacon) {
       const payload = new Blob(
         [JSON.stringify({ project: project.slug })],
-        { type: 'application/json' },
+        { type: 'text/plain' },
       )
       navigator.sendBeacon('/api/click', payload)
     } else {
       fetch('/api/click', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
         body: JSON.stringify({ project: project.slug }),
         keepalive: true,
       }).catch(() => {})
@@ -550,7 +487,6 @@ function App() {
               likes={stats.likes}
               dislikes={stats.dislikes}
               onVote={handleVote}
-              online={online}
             />
           </div>
         </section>

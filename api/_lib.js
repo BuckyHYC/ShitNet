@@ -3,6 +3,13 @@ import { Redis } from '@upstash/redis'
 export const STATS_KEY = 'shitnet:stats'
 export const PROJECTS = ['morontown', 'next_bad_idea', 'mystery_slot']
 
+export function sendOptions(res) {
+  res.setHeader('Access-Control-Allow-Origin', '*')
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+  res.status(204).end()
+}
+
 let redis
 
 function getRedis() {
