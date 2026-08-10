@@ -14,7 +14,6 @@ import {
 
 const GITHUB_URL = 'https://github.com/BuckyHYC'
 const MORON_TOWN_URL = 'https://moron-town.vercel.app'
-const CLIENT_ID_KEY = 'shitnet_client_id'
 const CLICKS_KEY = 'shitnet_clicks_v1'
 const STORAGE_KEY = 'shitnet_feedback_v1'
 const COMMAND = 'open moron-town.vercel.app'
@@ -160,7 +159,7 @@ function BootLog() {
 }
 
 function readFeedback() {
-  const empty = { vote: null, likes: 0, dislikes: 0 }
+  const empty = { likes: 0, dislikes: 0 }
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY)
     if (!raw) {
@@ -168,10 +167,6 @@ function readFeedback() {
     }
     const parsed = JSON.parse(raw)
     return {
-      vote:
-        parsed.vote === 'like' || parsed.vote === 'dislike'
-          ? parsed.vote
-          : null,
       likes: Number.isFinite(parsed.likes) ? Math.max(0, parsed.likes) : 0,
       dislikes: Number.isFinite(parsed.dislikes)
         ? Math.max(0, parsed.dislikes)
@@ -179,21 +174,6 @@ function readFeedback() {
     }
   } catch {
     return empty
-  }
-}
-
-function readClientId() {
-  try {
-    let id = window.localStorage.getItem(CLIENT_ID_KEY)
-    if (!id) {
-      id =
-        window.crypto?.randomUUID?.() ||
-        `client-${Date.now()}-${Math.random().toString(36).slice(2)}`
-      window.localStorage.setItem(CLIENT_ID_KEY, id)
-    }
-    return id
-  } catch {
-    return null
   }
 }
 
@@ -245,7 +225,7 @@ function normalizeStats(raw) {
   return stats
 }
 
-function Feedback({ likes, dislikes, vote, onVote, busy, online }) {
+function Feedback({ likes, dislikes, onVote, online }) {
   return (
     <div className="feedback-panel">
       <div className="feedback-copy">
@@ -255,7 +235,7 @@ function Feedback({ likes, dislikes, vote, onVote, busy, online }) {
         <p className="feedback-line">这个网站，还行吗？</p>
         <p className="feedback-note">
           {online
-            ? '数字来自云端，所有访客共享；每个浏览器限一票。'
+            ? '数字来自云端，所有访客共享；点一次加一，不限制次数。'
             : '本地降级模式：数字只存在你的浏览器里。'}
         </p>
       </div>
@@ -263,8 +243,6 @@ function Feedback({ likes, dislikes, vote, onVote, busy, online }) {
         <button
           className="vote-button vote-button--like"
           type="button"
-          aria-pressed={vote === 'like'}
-          disabled={busy}
           onClick={() => onVote('like')}
         >
           <ThumbsUp size={18} />
@@ -274,8 +252,6 @@ function Feedback({ likes, dislikes, vote, onVote, busy, online }) {
         <button
           className="vote-button vote-button--dislike"
           type="button"
-          aria-pressed={vote === 'dislike'}
-          disabled={busy}
           onClick={() => onVote('dislike')}
         >
           <ThumbsDown size={18} />
@@ -360,17 +336,30 @@ function ProjectCard({ project, clicks, index, onOpen }) {
 }
 
 function App() {
-  const [clientId] = useState(readClientId)
   const [feedback] = useState(readFeedback)
-  const [vote, setVote] = useState(feedback.vote)
   const [stats, setStats] = useState(() => ({
     likes: feedback.likes,
     dislikes: feedback.dislikes,
     projectClicks: readLocalClicks(),
   }))
-  const [busy, setBusy] = useState(false)
   const [online, setOnline] = useState(false)
   const lastClickAt = useRef({})
+  const voteTimer = useRef(null)
+
+  const refreshStats = () => {
+    fetch('/api/stats')
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error('stats request failed')
+        }
+        return response.json()
+      })
+      .then((data) => {
+        setStats(normalizeStats(data))
+        setOnline(true)
+      })
+      .catch(() => {})
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -393,72 +382,39 @@ function App() {
   }, [])
 
   const handleVote = (choice) => {
-    if (busy || !clientId) return
+    setStats((current) => {
+      const next = {
+        ...current,
+        likes: current.likes,
+        dislikes: current.dislikes,
+      }
+      next[choice] += 1
+      try {
+        window.localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify({ likes: next.likes, dislikes: next.dislikes }),
+        )
+      } catch {
+        // 浏览器禁用存储时，仅保留当前页面内的状态
+      }
+      return next
+    })
 
-    const previousVote = vote
-    const nextVote = previousVote === choice ? null : choice
-    const previousStats = stats
-    const nextStats = {
-      ...stats,
-      likes: stats.likes,
-      dislikes: stats.dislikes,
-    }
-    if (previousVote) {
-      nextStats[previousVote] = Math.max(0, nextStats[previousVote] - 1)
-    }
-    if (nextVote) {
-      nextStats[nextVote] += 1
-    }
-
-    setVote(nextVote)
-    setStats(nextStats)
-    try {
-      window.localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({
-          vote: nextVote,
-          likes: nextStats.likes,
-          dislikes: nextStats.dislikes,
-        }),
-      )
-    } catch {
-      // 浏览器禁用存储时，仅保留当前页面内的状态
-    }
-
-    setBusy(true)
     fetch('/api/vote', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ clientId, choice: nextVote }),
+      body: JSON.stringify({ choice }),
     })
       .then((response) => {
         if (!response.ok) {
           throw new Error('vote request failed')
         }
-        return response.json()
-      })
-      .then((data) => {
-        setStats(normalizeStats(data))
         setOnline(true)
       })
-      .catch(() => {
-        setVote(previousVote)
-        setStats(previousStats)
-        setOnline(false)
-        try {
-          window.localStorage.setItem(
-            STORAGE_KEY,
-            JSON.stringify({
-              vote: previousVote,
-              likes: previousStats.likes,
-              dislikes: previousStats.dislikes,
-            }),
-          )
-        } catch {
-          // 忽略存储失败
-        }
-      })
-      .finally(() => setBusy(false))
+      .catch(() => setOnline(false))
+
+    window.clearTimeout(voteTimer.current)
+    voteTimer.current = window.setTimeout(refreshStats, 900)
   }
 
   const handleProjectOpen = (project) => {
@@ -496,17 +452,7 @@ function App() {
         keepalive: true,
       }).catch(() => {})
     }
-    window.setTimeout(() => {
-      fetch('/api/stats')
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error('stats request failed')
-          }
-          return response.json()
-        })
-        .then((data) => setStats(normalizeStats(data)))
-        .catch(() => {})
-    }, 900)
+    window.setTimeout(refreshStats, 900)
   }
 
   return (
@@ -608,9 +554,7 @@ function App() {
             <Feedback
               likes={stats.likes}
               dislikes={stats.dislikes}
-              vote={vote}
               onVote={handleVote}
-              busy={busy}
               online={online}
             />
           </div>

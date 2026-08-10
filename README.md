@@ -29,7 +29,7 @@ npm run preview
 满意/不满意与项目卡片点击量使用 Upstash Redis 全局持久化：
 
 - `GET /api/stats`：读取全局统计。
-- `POST /api/vote`：投票、切换或取消（每个浏览器一票）。
+- `POST /api/vote`：满意/不满意每次点击 +1，不限制次数。
 - `POST /api/click`：项目卡片点击量 +1。
 
 前端在 API 不可用时自动降级为 `localStorage`（键 `shitnet_feedback_v1`、`shitnet_clicks_v1`）。

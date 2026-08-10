@@ -1,7 +1,6 @@
 import { Redis } from '@upstash/redis'
 
 export const STATS_KEY = 'shitnet:stats'
-export const VOTERS_KEY = 'shitnet:voters'
 export const PROJECTS = ['morontown', 'next_bad_idea', 'mystery_slot']
 
 let redis
