@@ -1,7 +1,7 @@
 import { Redis } from '@upstash/redis'
 
 export const STATS_KEY = 'shitnet:stats'
-export const PROJECTS = ['morontown', 'next_bad_idea', 'mystery_slot']
+export const PROJECTS = ['morontown', 'craftmine', 'mystery_slot']
 
 export function sendOptions(res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -25,7 +25,7 @@ export function emptyStats() {
     dislikes: 0,
     projectClicks: {
       morontown: 0,
-      next_bad_idea: 0,
+      craftmine: 0,
       mystery_slot: 0,
     },
   }

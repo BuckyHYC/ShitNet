@@ -20,7 +20,7 @@ const EMPTY_STATS = {
   dislikes: 0,
   projectClicks: {
     morontown: 0,
-    next_bad_idea: 0,
+    craftmine: 0,
     mystery_slot: 0,
   },
 }
@@ -67,12 +67,12 @@ const projects = [
     href: MORON_TOWN_URL,
   },
   {
-    slug: 'next_bad_idea',
-    name: 'Next Bad Idea',
+    slug: 'craftmine',
+    name: 'CraftMine',
     tag: 'SOON',
     accent: 'warn',
     icon: Hammer,
-    description: '下一个烂点子正在孵化，先把位置占好。',
+    description: '一个正在打磨的方块沙盒小游戏，采矿、合成与建造玩法正在逐步成型。',
     meta: 'status: in development',
     href: null,
   },
