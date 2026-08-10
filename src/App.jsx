@@ -399,7 +399,7 @@ function App() {
       </main>
 
       <footer className="footer">
-        <p>SHITNET © 2026 · 纯前端，无后端</p>
+        <p>SHITNET © 2026</p>
         <a href={GITHUB_URL} target="_blank" rel="noreferrer">
           <ExternalLink size={14} />
           github.com/BuckyHYC
