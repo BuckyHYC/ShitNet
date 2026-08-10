@@ -25,6 +25,28 @@ const EMPTY_STATS = {
   },
 }
 
+const DISLIKE_KEY = 'shitnet:disliked'
+
+function readDisliked() {
+  try {
+    return window.localStorage.getItem(DISLIKE_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+function writeDisliked(value) {
+  try {
+    if (value) {
+      window.localStorage.setItem(DISLIKE_KEY, '1')
+    } else {
+      window.localStorage.removeItem(DISLIKE_KEY)
+    }
+  } catch {
+    // localStorage may be unavailable in private mode
+  }
+}
+
 const bootLines = [
   { time: '12:00:01', level: 'ok', text: 'ShitNet OS v1.0 booting...' },
   { time: '12:00:02', level: 'ok', text: 'bad-idea engine ......... online' },
@@ -179,14 +201,14 @@ function normalizeStats(raw) {
   return stats
 }
 
-function Feedback({ likes, dislikes, onVote }) {
+function Feedback({ likes, dislikes, disliked, onVote }) {
   return (
     <div className="feedback-panel">
       <div className="feedback-copy">
         <span className="feedback-label">USER INPUT // GLOBAL</span>
         <p className="feedback-line">这个网站，还行吗？</p>
         <p className="feedback-note">
-          数字来自云端，所有访客共享；点一次加一，不限制次数。
+          数字来自云端，所有访客共享；满意点一次加一，不满意每个浏览器只能记一次，再点取消。
         </p>
       </div>
       <div className="feedback-actions">
@@ -202,6 +224,7 @@ function Feedback({ likes, dislikes, onVote }) {
         <button
           className="vote-button vote-button--dislike"
           type="button"
+          aria-pressed={disliked}
           onClick={() => onVote('dislike')}
         >
           <ThumbsDown size={18} />
@@ -290,6 +313,8 @@ function App() {
     ...EMPTY_STATS,
     projectClicks: { ...EMPTY_STATS.projectClicks },
   }))
+  const dislikedRef = useRef(readDisliked())
+  const [disliked, setDisliked] = useState(dislikedRef.current)
   const lastClickAt = useRef({})
   const voteTimer = useRef(null)
 
@@ -327,7 +352,43 @@ function App() {
   }, [])
 
   const handleVote = (choice) => {
-    const field = choice === 'dislike' ? 'dislikes' : 'likes'
+    if (choice === 'dislike') {
+      const nextDisliked = !dislikedRef.current
+      dislikedRef.current = nextDisliked
+      setDisliked(nextDisliked)
+      writeDisliked(nextDisliked)
+      setStats((current) => ({
+        ...current,
+        dislikes: Math.max(0, current.dislikes + (nextDisliked ? 1 : -1)),
+      }))
+      fetch('/api/vote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+        body: JSON.stringify({
+          choice: nextDisliked ? 'dislike' : 'dislike_cancel',
+        }),
+      })
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error('vote request failed')
+          }
+        })
+        .catch(() => {
+          const rolledBack = !nextDisliked
+          dislikedRef.current = rolledBack
+          setDisliked(rolledBack)
+          writeDisliked(rolledBack)
+          setStats((current) => ({
+            ...current,
+            dislikes: Math.max(0, current.dislikes + (nextDisliked ? -1 : 1)),
+          }))
+        })
+      window.clearTimeout(voteTimer.current)
+      voteTimer.current = window.setTimeout(refreshStats, 900)
+      return
+    }
+
+    const field = 'likes'
     setStats((current) => {
       const next = { ...current }
       next[field] += 1
@@ -344,7 +405,12 @@ function App() {
           throw new Error('vote request failed')
         }
       })
-      .catch(() => {})
+      .catch(() => {
+        setStats((current) => ({
+          ...current,
+          likes: Math.max(0, current.likes - 1),
+        }))
+      })
 
     window.clearTimeout(voteTimer.current)
     voteTimer.current = window.setTimeout(refreshStats, 900)
@@ -486,6 +552,7 @@ function App() {
             <Feedback
               likes={stats.likes}
               dislikes={stats.dislikes}
+              disliked={disliked}
               onVote={handleVote}
             />
           </div>
