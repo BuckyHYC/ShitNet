@@ -12,7 +12,7 @@ export function sendOptions(res) {
 
 let redis
 
-function getRedis() {
+export function getRedis() {
   if (!redis) {
     redis = Redis.fromEnv()
   }
