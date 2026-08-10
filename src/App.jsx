@@ -14,6 +14,7 @@ import {
 
 const GITHUB_URL = 'https://github.com/BuckyHYC'
 const MORON_TOWN_URL = 'https://moron-town.vercel.app'
+const CRAFT_MINE_URL = 'https://craft-mine-xi.vercel.app/'
 const COMMAND = 'open moron-town.vercel.app'
 const EMPTY_STATS = {
   likes: 0,
@@ -69,12 +70,12 @@ const projects = [
   {
     slug: 'craftmine',
     name: 'CraftMine',
-    tag: 'SOON',
-    accent: 'warn',
+    tag: 'LIVE',
+    accent: 'live',
     icon: Hammer,
-    description: '一个正在打磨的方块沙盒小游戏，采矿、合成与建造玩法正在逐步成型。',
-    meta: 'status: in development',
-    href: null,
+    description: '一个已经上线的方块沙盒小游戏，采矿、合成与建造现在就能玩。',
+    meta: 'status: online',
+    href: CRAFT_MINE_URL,
   },
   {
     slug: 'mystery_slot',
