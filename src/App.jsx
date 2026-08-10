@@ -201,7 +201,7 @@ function normalizeStats(raw) {
   return stats
 }
 
-function Feedback({ likes, dislikes, disliked, onVote }) {
+function Feedback({ likes, disliked, onVote }) {
   return (
     <div className="feedback-panel">
       <div className="feedback-copy">
@@ -226,7 +226,6 @@ function Feedback({ likes, dislikes, disliked, onVote }) {
         >
           <ThumbsDown size={18} />
           <span>不满意</span>
-          <span className="vote-count">{dislikes}</span>
         </button>
       </div>
     </div>
@@ -548,7 +547,6 @@ function App() {
             </div>
             <Feedback
               likes={stats.likes}
-              dislikes={stats.dislikes}
               disliked={disliked}
               onVote={handleVote}
             />
