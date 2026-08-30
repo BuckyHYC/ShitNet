@@ -32,6 +32,15 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  /* 禁止全局文字选中，避免点击背景时误选文本 */
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+input,
+textarea {
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 body,
@@ -57,15 +66,14 @@ button:focus-visible {
 }
 
 .bg-grid {
-  position: fixed;
+  position: absolute; /* 随页面滚动同步滚动（.app 为 relative 包含块） */
   inset: 0;
   z-index: 0;
+  display: block;
   pointer-events: none;
-  background-image:
-    linear-gradient(rgba(52, 245, 197, 0.045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(52, 245, 197, 0.045) 1px, transparent 1px);
-  background-size: 46px 46px;
-  mask-image: linear-gradient(to bottom, black 0%, black 55%, transparent 100%);
+  -webkit-user-select: none;
+  user-select: none;
+  /* 渐隐 mask 由 JS 按视口位置计算（见 BackgroundGrid.jsx），此处不设 */
 }
 
 .scanlines {
@@ -385,7 +393,7 @@ button:focus-visible {
 }
 
 .section-projects {
-  background: rgba(255, 255, 255, 0.012);
+  background: rgba(255, 255, 255, 0.012); /* 保持透明，卡片周围背景网格可见 */
 }
 
 .section-inner {
@@ -440,10 +448,11 @@ button:focus-visible {
 }
 
 .project-card--live {
+  /* 完全不透明，网格线无法透过；青色氛围由边框与图标承担 */
   background: linear-gradient(
     180deg,
-    rgba(52, 245, 197, 0.07),
-    rgba(9, 16, 12, 0.85) 55%
+    #12241c,
+    #0d1410 55%
   );
   border: 1px solid rgba(52, 245, 197, 0.42);
 }
@@ -457,7 +466,7 @@ button:focus-visible {
 }
 
 .project-card--pending {
-  background: rgba(255, 255, 255, 0.016);
+  background: #0d1410; /* 完全不透明，遮挡网格线 */
   border: 1px dashed rgba(167, 179, 168, 0.3);
 }
 
@@ -692,6 +701,41 @@ button:focus-visible {
 
 .footer a:hover {
   color: var(--cyan);
+}
+
+.footer-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.friend-links {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  -webkit-user-select: none;
+  user-select: none;
+  pointer-events: auto;
+}
+
+.friend-link {
+  display: inline-block;
+  padding: 3px 8px;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  color: var(--dim);
+  font-size: 11px;
+  line-height: 1.4;
+  text-decoration: none;
+  transition:
+    color 0.18s ease,
+    text-decoration-color 0.18s ease;
+}
+
+.friend-link:hover {
+  color: #666;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .github-badge {

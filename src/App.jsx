@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
+import BackgroundGrid from './BackgroundGrid.jsx'
 import {
   ArrowUpRight,
   CircleDot,
@@ -452,7 +453,7 @@ function App() {
 
   return (
     <div className="app">
-      <div className="bg-grid" aria-hidden="true" />
+      <BackgroundGrid />
       <div className="scanlines" aria-hidden="true" />
 
       <header className="topbar">
@@ -557,10 +558,30 @@ function App() {
 
       <footer className="footer">
         <p>SHITNET © 2026</p>
-        <a href={GITHUB_URL} target="_blank" rel="noreferrer">
-          <ExternalLink size={14} />
-          github.com/BuckyHYC
-        </a>
+        <div className="footer-right">
+          <div className="friend-links" aria-label="友链">
+            <a
+              className="friend-link"
+              href="https://aldyh.top"
+              target="_blank"
+              rel="noreferrer"
+            >
+              aldyh.top
+            </a>
+            <a
+              className="friend-link"
+              href="https://amzcd.top"
+              target="_blank"
+              rel="noreferrer"
+            >
+              amzcd.top
+            </a>
+          </div>
+          <a href={GITHUB_URL} target="_blank" rel="noreferrer">
+            <ExternalLink size={14} />
+            github.com/BuckyHYC
+          </a>
+        </div>
       </footer>
 
       <a
