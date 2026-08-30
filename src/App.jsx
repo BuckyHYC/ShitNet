@@ -570,11 +570,11 @@ function App() {
             </a>
             <a
               className="friend-link"
-              href="https://amzcd.top"
+              href="https://www.infvar.com/friends/"
               target="_blank"
               rel="noreferrer"
             >
-              amzcd.top
+              infvar.com
             </a>
           </div>
           <a href={GITHUB_URL} target="_blank" rel="noreferrer">
