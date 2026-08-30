@@ -5,23 +5,23 @@ import {
   CircleDot,
   Cpu,
   ExternalLink,
-  Hammer,
   MousePointerClick,
   Rocket,
+  ScanLine,
   ThumbsDown,
   ThumbsUp,
 } from 'lucide-react'
 
 const GITHUB_URL = 'https://github.com/BuckyHYC'
 const MORON_TOWN_URL = 'https://moron-town.vercel.app'
-const CRAFT_MINE_URL = 'https://craft-mine-xi.vercel.app/'
+const WEB_SCANNER_URL = 'https://web-scanner-blond.vercel.app/'
 const COMMAND = 'open moron-town.vercel.app'
 const EMPTY_STATS = {
   likes: 0,
   dislikes: 0,
   projectClicks: {
     morontown: 0,
-    craftmine: 0,
+    webscanner: 0,
     mystery_slot: 0,
   },
 }
@@ -68,14 +68,14 @@ const projects = [
     href: MORON_TOWN_URL,
   },
   {
-    slug: 'craftmine',
-    name: 'CraftMine',
+    slug: 'webscanner',
+    name: 'WebScanner',
     tag: 'LIVE',
     accent: 'live',
-    icon: Hammer,
-    description: '一个已经上线的方块沙盒小游戏，采矿、合成与建造现在就能玩。',
-    meta: 'status: online',
-    href: CRAFT_MINE_URL,
+    icon: ScanLine,
+    description: '一个已经上线的网页扫描仪，裁剪、增强与导出 PDF 全在浏览器本地完成。',
+    meta: 'vercel.app · scan now',
+    href: WEB_SCANNER_URL,
   },
   {
     slug: 'mystery_slot',
