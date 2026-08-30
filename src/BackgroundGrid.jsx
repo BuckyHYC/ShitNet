@@ -25,6 +25,11 @@ const CLICK_DECAY = 0.3 // 高斯宽度系数：σ = 当前前沿半径 * CLICK_
 const FRONT_SOFT = 24 // 涟漪前沿软过渡宽度（px）：前沿扫过时强度渐入，消除边界突跳
 const MAX_DISP = 9 // 总位移上限（px）：多力叠加时 clamp，防止个别点被拉得过远形成尖锐转折
 
+// ===== 触摸端参数（手机端专用，不影响桌面交互） =====
+const TOUCH_FADE_DURATION = 0.6 // 触摸高亮松手后淡出时长（s）：点背景出现高亮，松手缓慢变暗
+const TOUCH_TARGET_SEL = 'a,button,[class*="project-card"]' // 点击这些交互元素时不触发背景高亮
+const TOUCH_IGNORE_MS = 400 // 触摸按下后抑制浏览器合成的模拟 mousemove 时长（ms），防止点击后网格误亮
+
 // ===== 平滑性参数（修复跳动/硬边） =====
 const DISP_LERP = 0.15 // 帧间位移插值系数：当前位移 = lerp(当前, 目标, DISP_LERP)，平滑逼近防突变
 const SMOOTH_SELF = 0.6 // Laplacian 邻居平滑：自身权重
@@ -58,6 +63,8 @@ function BackgroundGrid() {
     let cols = [] // 垂直网格线
     let verts = [] // 全部唯一顶点（用于位移更新，避免共享点被重复 lerp）
     let ripples = [] // 点击涟漪：[{x, y, start, radius, t}]
+    let touch = null // 触摸高亮：[{x, y, alpha, active}] 手机端点背景亮起，松手后缓慢变暗
+    let lastTouchAt = -Infinity // 最近一次触摸按下时间：用于抑制合成 mousemove
 
     // 预计算各层颜色：按亮度插值 青色 → 浅灰
     const layerColors = Array.from({ length: LAYERS }, (_, i) => {
@@ -113,6 +120,8 @@ function BackgroundGrid() {
     }
 
     function onMove(e) {
+      // 触摸操作期间（含按下后短窗口内）忽略浏览器合成的模拟鼠标移动，避免干扰触摸高亮
+      if (touch || performance.now() - lastTouchAt < TOUCH_IGNORE_MS) return
       client = { x: e.clientX, y: e.clientY }
     }
 
@@ -120,9 +129,16 @@ function BackgroundGrid() {
       client = { x: -9999, y: -9999 }
     }
 
-    // 点击触发涟漪：按下瞬间在光标位置爆发（文档坐标）
+    // 按下：鼠标点击 → 涟漪（桌面交互不变）；触摸点背景 → 网格高亮亮起
     function onDown(e) {
       if (reduced) return
+      if (e.pointerType === 'touch') {
+        lastTouchAt = performance.now()
+        // 点击可交互元素（卡片/链接/按钮）不触发背景高亮
+        if (e.target && e.target.closest && e.target.closest(TOUCH_TARGET_SEL)) return
+        touch = { x: e.clientX, y: e.clientY + window.scrollY, alpha: 1, active: true }
+        return
+      }
       ripples.push({
         x: e.clientX,
         y: e.clientY + window.scrollY,
@@ -130,6 +146,14 @@ function BackgroundGrid() {
         radius: 0,
         t: 0, // 进度 0..1
       })
+    }
+
+    // 松手：触摸高亮进入淡出阶段（缓慢变暗）；滑动页面（pointercancel）直接取消
+    function onUp(e) {
+      if (e.pointerType === 'touch' && touch) touch.active = false
+    }
+    function onCancel() {
+      touch = null
     }
 
     // 静止网格（reduced motion 时使用）
@@ -176,6 +200,12 @@ function BackgroundGrid() {
       const tau = target > energy ? RISE_TAU : FALL_TAU
       energy += (target - energy) * (1 - Math.exp(-dt / tau))
       phase += dt * (1.2 + energy * 2) // 涟漪相位：缓慢
+
+      // 触摸高亮：松手后 alpha 按固定时长线性衰减到 0（缓慢变暗），归零后移除
+      if (touch && !touch.active) {
+        touch.alpha -= dt / TOUCH_FADE_DURATION
+        if (touch.alpha <= 0) touch = null
+      }
 
       ctx.clearRect(0, 0, width, height)
       ctx.lineWidth = 1
@@ -289,8 +319,13 @@ function BackgroundGrid() {
         const maskFade = v <= vh * 0.55 ? 1 : Math.max(0, 1 - (v - vh * 0.55) / (vh * 0.45))
         if (maskFade <= 0) return
         const d = Math.hypot(mx - follow.x, my - follow.y)
-        const t = smoothstep(Math.max(0, 1 - d / GLOW_RADIUS)) * maskFade
-        const layer = Math.min(LAYERS - 1, Math.floor(t * LAYERS))
+        let t = smoothstep(Math.max(0, 1 - d / GLOW_RADIUS))
+        // 触摸高亮：同样以 GLOW_RADIUS 变亮网格线，alpha 随淡出递减
+        if (touch) {
+          const td = Math.hypot(mx - touch.x, my - touch.y)
+          t = Math.max(t, smoothstep(Math.max(0, 1 - td / GLOW_RADIUS)) * touch.alpha)
+        }
+        const layer = Math.min(LAYERS - 1, Math.floor(t * maskFade * LAYERS))
         const path = layers[layer]
         path.moveTo(a.x, a.y)
         path.lineTo(b.x, b.y)
@@ -318,6 +353,8 @@ function BackgroundGrid() {
     window.addEventListener('mousemove', onMove)
     document.addEventListener('mouseleave', onLeave)
     window.addEventListener('pointerdown', onDown)
+    window.addEventListener('pointerup', onUp)
+    window.addEventListener('pointercancel', onCancel)
 
     if (!reduced) {
       last = performance.now()
@@ -330,6 +367,8 @@ function BackgroundGrid() {
       window.removeEventListener('mousemove', onMove)
       document.removeEventListener('mouseleave', onLeave)
       window.removeEventListener('pointerdown', onDown)
+      window.removeEventListener('pointerup', onUp)
+      window.removeEventListener('pointercancel', onCancel)
     }
   }, [])
 
