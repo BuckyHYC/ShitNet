@@ -493,11 +493,11 @@ function App() {
             <div className="hero-actions">
               <a
                 className="btn btn-primary"
-                href={MORON_TOWN_URL}
+                href={WEB_SCANNER_URL}
                 target="_blank"
                 rel="noreferrer"
               >
-                进入 MoronTown
+                进入 WebScanner
                 <ArrowUpRight size={19} />
               </a>
               <a
