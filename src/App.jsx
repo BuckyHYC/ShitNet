@@ -13,8 +13,8 @@ import {
 } from 'lucide-react'
 
 const GITHUB_URL = 'https://github.com/BuckyHYC'
-const MORON_TOWN_URL = 'https://moron-town.vercel.app'
-const WEB_SCANNER_URL = 'https://web-scanner-blond.vercel.app/'
+const MORON_TOWN_URL = 'https://mt.ymyc.fun'
+const WEB_SCANNER_URL = 'https://scan.ymyc.fun'
 const COMMAND = 'open moron-town.vercel.app'
 const EMPTY_STATS = {
   likes: 0,
