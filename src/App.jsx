@@ -583,17 +583,6 @@ function App() {
           </a>
         </div>
       </footer>
-
-      <a
-        className="github-badge"
-        href={GITHUB_URL}
-        target="_blank"
-        rel="noreferrer"
-        aria-label="ShitNet GitHub 主页"
-      >
-        <GithubMark size={17} />
-        <span>ShitNet</span>
-      </a>
     </div>
   )
 }
