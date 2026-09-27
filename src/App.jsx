@@ -4,7 +4,7 @@ import BackgroundGrid from './BackgroundGrid.jsx'
 import {
   ArrowUpRight,
   CircleDot,
-  Cpu,
+  Compass,
   ExternalLink,
   MousePointerClick,
   Rocket,
@@ -16,6 +16,7 @@ import {
 const GITHUB_URL = 'https://github.com/BuckyHYC'
 const MORON_TOWN_URL = 'https://mt.ymyc.fun'
 const WEB_SCANNER_URL = 'https://scan.ymyc.fun'
+const LSIGNUP_URL = 'https://ls.ymyc.fun'
 const COMMAND = 'open moron-town.vercel.app'
 const EMPTY_STATS = {
   likes: 0,
@@ -23,7 +24,7 @@ const EMPTY_STATS = {
   projectClicks: {
     morontown: 0,
     webscanner: 0,
-    mystery_slot: 0,
+    lsignup: 0,
   },
 }
 
@@ -79,14 +80,14 @@ const projects = [
     href: WEB_SCANNER_URL,
   },
   {
-    slug: 'mystery_slot',
-    name: 'Mystery Slot',
-    tag: 'SOON',
-    accent: 'muted',
-    icon: Cpu,
-    description: '保留位，等真正的灵感（或灾难）出现。',
-    meta: 'status: in queue',
-    href: null,
+    slug: 'lsignup',
+    name: 'LSignUp',
+    tag: 'LIVE',
+    accent: 'live',
+    icon: Compass,
+    description: '一个已经上线的免注册工具索引，收录 268 条打开即用的浏览器工具，随时翻随时搜。',
+    meta: 'vercel.app · search now',
+    href: LSIGNUP_URL,
   },
 ]
 
@@ -494,11 +495,11 @@ function App() {
             <div className="hero-actions">
               <a
                 className="btn btn-primary"
-                href={WEB_SCANNER_URL}
+                href={LSIGNUP_URL}
                 target="_blank"
                 rel="noreferrer"
               >
-                进入 WebScanner
+                进入 LSignUp
                 <ArrowUpRight size={19} />
               </a>
               <a
